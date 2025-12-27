@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
@@ -61,6 +62,20 @@ export default function DashboardPage() {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 uppercase">
                 {user.role}
               </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            <div className="p-4 border rounded bg-blue-50">
+              <h3 className="font-semibold text-blue-900 mb-1">CMS Module</h3>
+              <p className="text-sm text-blue-800">Manage landing copy, announcements, and curated content with workflows.</p>
+              <Link href="/dashboard/cms" className="mt-3 inline-flex text-sm font-semibold text-blue-700 hover:text-blue-900 underline">
+                Open CMS
+              </Link>
+            </div>
+            <div className="p-4 border rounded bg-emerald-50">
+              <h3 className="font-semibold text-emerald-900 mb-1">Publishing Policy</h3>
+              <p className="text-sm text-emerald-800">Admins own publishing/archival. Creators collaborate via draft/review states.</p>
             </div>
           </div>
         </div>

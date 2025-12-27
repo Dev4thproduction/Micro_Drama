@@ -4,7 +4,7 @@ const errorHandler = (err, req, res, next) => {
   const message = err.message || 'Internal Server Error';
 
   console.error(
-    `[ERR] ${req.method} ${req.originalUrl} -> ${status} : ${message}`,
+    `[ERR] ${req.requestId || '-'} ${req.method} ${req.originalUrl} -> ${status} : ${message}`,
     process.env.NODE_ENV === 'development' ? err.stack : undefined
   );
 

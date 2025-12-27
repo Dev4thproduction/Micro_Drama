@@ -1,8 +1,7 @@
 const http = require('http');
-const mongoose = require('mongoose');
 const config = require('./src/config/env');
 const app = require('./app');
-const { connectDB } = require('./src/config/db');
+const { connectDB, disconnectDB } = require('./src/config/db');
 
 const PORT = config.port;
 let server;
@@ -25,7 +24,7 @@ const shutdown = async (signal) => {
     if (server) {
       await new Promise((resolve) => server.close(resolve));
     }
-    await mongoose.connection.close(false);
+    await disconnectDB();
     process.exit(0);
   } catch (err) {
     console.error('Error during shutdown', err);

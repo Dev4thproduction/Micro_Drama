@@ -11,7 +11,8 @@ const VideoSchema = new mongoose.Schema(
     durationSeconds: { type: Number, default: 0, min: 0 },
     sizeBytes: { type: Number, default: 0, min: 0 },
     format: { type: String, trim: true },
-    resolution: { type: String, trim: true }
+    resolution: { type: String, trim: true },
+    processingNote: { type: String, trim: true }
   },
   { timestamps: true }
 );

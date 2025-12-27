@@ -62,6 +62,14 @@ export default function HomePage() {
               {/* DYNAMIC AUTH BUTTONS */}
               {user ? (
                 <div className="flex items-center gap-3">
+                  {/* CREATOR / ADMIN BUTTON */}
+                  {(user.role === 'creator' || user.role === 'admin') && (
+                    <Link href="/dashboard/studio">
+                      <button className="hidden sm:flex h-10 px-4 items-center gap-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-sm font-bold transition-all border border-white/10">
+                        Creator Studio
+                      </button>
+                    </Link>
+                  )}
                   {/* ADMIN ONLY BUTTON */}
                   {user.role === 'admin' && (
                     <Link href="/dashboard">

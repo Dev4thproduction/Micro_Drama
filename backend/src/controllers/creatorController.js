@@ -4,21 +4,23 @@ const Episode = require('../models/Episode');
 const Video = require('../models/Video');
 const { sendSuccess } = require('../utils/response');
 const { parsePagination, buildMeta } = require('../utils/pagination');
+const { sanitizeStringArray, ensureOwnerOrAdmin, validatePositiveInt } = require('../middleware/validator');
 
 const createSeries = async (req, res, next) => {
   try {
-    const { title, description, tags } = req.body || {};
+    const { title, description, tags, thumbnail } = req.body || {};
     const creatorId = req.user && req.user.id;
 
     if (!title || typeof title !== 'string' || !title.trim()) {
       return next({ status: 400, message: 'Title is required' });
     }
 
-    const safeTags = Array.isArray(tags) ? tags.filter((t) => typeof t === 'string') : [];
+    const safeTags = sanitizeStringArray(tags);
 
     const series = await Series.create({
       title: title.trim(),
       description: description || '',
+      thumbnail: thumbnail || '',
       tags: safeTags,
       creator: creatorId,
       status: 'pending'
@@ -58,7 +60,7 @@ const createEpisode = async (req, res, next) => {
   try {
     const creatorId = req.user && req.user.id;
     const { seriesId } = req.params;
-    const { title, synopsis, order, releaseDate, video } = req.body || {};
+    const { title, synopsis, order, releaseDate, video, thumbnail } = req.body || {};
 
     if (!Types.ObjectId.isValid(seriesId)) {
       return next({ status: 400, message: 'Invalid seriesId' });
@@ -66,8 +68,10 @@ const createEpisode = async (req, res, next) => {
     if (!title || typeof title !== 'string' || !title.trim()) {
       return next({ status: 400, message: 'Title and order are required' });
     }
-    if (order === undefined || !Number.isInteger(order) || order < 1) {
-      return next({ status: 400, message: 'order must be a positive integer' });
+    try {
+      validatePositiveInt(order, 'order');
+    } catch (err) {
+      return next(err);
     }
     if (video && !Types.ObjectId.isValid(video)) {
       return next({ status: 400, message: 'Invalid video id' });
@@ -85,7 +89,7 @@ const createEpisode = async (req, res, next) => {
     if (!series) {
       return next({ status: 404, message: 'Series not found' });
     }
-    if (series.creator.toString() !== creatorId) {
+    if (!ensureOwnerOrAdmin(series.creator, req.user)) {
       return next({ status: 403, message: 'You do not have access to this series' });
     }
 
@@ -95,7 +99,7 @@ const createEpisode = async (req, res, next) => {
       if (!videoDoc) {
         return next({ status: 404, message: 'Video not found' });
       }
-      if (videoDoc.owner.toString() !== creatorId) {
+      if (!ensureOwnerOrAdmin(videoDoc.owner, req.user)) {
         return next({ status: 403, message: 'You do not have access to this video' });
       }
     }
@@ -104,6 +108,7 @@ const createEpisode = async (req, res, next) => {
       series: seriesId,
       title: title.trim(),
       synopsis: synopsis || '',
+      thumbnail: thumbnail || '',
       order,
       releaseDate: normalizedReleaseDate,
       status: 'pending',
@@ -130,7 +135,7 @@ const listEpisodes = async (req, res, next) => {
     if (!series) {
       return next({ status: 404, message: 'Series not found' });
     }
-    if (series.creator.toString() !== creatorId) {
+    if (!ensureOwnerOrAdmin(series.creator, req.user)) {
       return next({ status: 403, message: 'You do not have access to this series' });
     }
 
@@ -187,6 +192,67 @@ const createVideo = async (req, res, next) => {
   }
 };
 
+const deleteVideo = async (req, res, next) => {
+  try {
+    const ownerId = req.user && req.user.id;
+    const { videoId } = req.params;
+
+    if (!Types.ObjectId.isValid(videoId)) {
+      return next({ status: 400, message: 'Invalid video id' });
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+      return next({ status: 404, message: 'Video not found' });
+    }
+    if (!ensureOwnerOrAdmin(video.owner, req.user)) {
+      return next({ status: 403, message: 'You do not have access to this video' });
+    }
+
+    const isInUse = await Episode.exists({ video: videoId });
+    if (isInUse) {
+      return next({ status: 400, message: 'Video is attached to an episode and cannot be deleted' });
+    }
+
+    await video.deleteOne();
+    return sendSuccess(res, { deleted: true });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const updateVideoStatus = async (req, res, next) => {
+  try {
+    const ownerId = req.user && req.user.id;
+    const { videoId } = req.params;
+    const { status, note } = req.body || {};
+
+    if (!Types.ObjectId.isValid(videoId)) {
+      return next({ status: 400, message: 'Invalid video id' });
+    }
+    const allowedStatuses = ['pending', 'processing', 'ready', 'failed'];
+    if (!status || !allowedStatuses.includes(status)) {
+      return next({ status: 400, message: 'Invalid status. Allowed: pending, processing, ready, failed' });
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+      return next({ status: 404, message: 'Video not found' });
+    }
+    if (!ensureOwnerOrAdmin(video.owner, req.user)) {
+      return next({ status: 403, message: 'You do not have access to this video' });
+    }
+
+    video.status = status;
+    video.processingNote = typeof note === 'string' ? note.trim() : undefined;
+    await video.save();
+
+    return sendSuccess(res, video);
+  } catch (err) {
+    return next(err);
+  }
+};
+
 const listVideos = async (req, res, next) => {
   try {
     const ownerId = req.user && req.user.id;
@@ -209,11 +275,177 @@ const listVideos = async (req, res, next) => {
   }
 };
 
+const updateSeries = async (req, res, next) => {
+  try {
+    const ownerId = req.user && req.user.id;
+    const { seriesId } = req.params;
+    const { title, description, tags, status, thumbnail } = req.body || {};
+
+    if (!Types.ObjectId.isValid(seriesId)) {
+      return next({ status: 400, message: 'Invalid seriesId' });
+    }
+
+    const series = await Series.findById(seriesId);
+    if (!series) {
+      return next({ status: 404, message: 'Series not found' });
+    }
+    if (!ensureOwnerOrAdmin(series.creator, req.user)) {
+      return next({ status: 403, message: 'You do not have access to this series' });
+    }
+
+    if (title !== undefined) {
+      if (!title || typeof title !== 'string' || !title.trim()) {
+        return next({ status: 400, message: 'Title is required' });
+      }
+      series.title = title.trim();
+    }
+    if (description !== undefined) series.description = description || '';
+    if (thumbnail !== undefined) series.thumbnail = thumbnail || '';
+    if (Array.isArray(tags)) series.tags = tags.filter((t) => typeof t === 'string' && t.trim());
+    if (status !== undefined) series.status = status;
+
+    await series.save();
+    return sendSuccess(res, series);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const deleteSeries = async (req, res, next) => {
+  try {
+    const ownerId = req.user && req.user.id;
+    const { seriesId } = req.params;
+
+    if (!Types.ObjectId.isValid(seriesId)) {
+      return next({ status: 400, message: 'Invalid seriesId' });
+    }
+
+    const series = await Series.findById(seriesId);
+    if (!series) {
+      return next({ status: 404, message: 'Series not found' });
+    }
+    if (!ensureOwnerOrAdmin(series.creator, req.user)) {
+      return next({ status: 403, message: 'You do not have access to this series' });
+    }
+
+    const hasEpisodes = await Episode.exists({ series: seriesId });
+    if (hasEpisodes) {
+      return next({ status: 400, message: 'Series has episodes; delete them first' });
+    }
+
+    await series.deleteOne();
+    return sendSuccess(res, { deleted: true });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const updateEpisode = async (req, res, next) => {
+  try {
+    const ownerId = req.user && req.user.id;
+    const { seriesId, episodeId } = req.params;
+    const { title, synopsis, order, releaseDate, video, thumbnail } = req.body || {};
+
+    if (!Types.ObjectId.isValid(seriesId) || !Types.ObjectId.isValid(episodeId)) {
+      return next({ status: 400, message: 'Invalid id' });
+    }
+
+    const series = await Series.findById(seriesId);
+    if (!series) {
+      return next({ status: 404, message: 'Series not found' });
+    }
+    if (req.user.role !== 'admin' && series.creator.toString() !== ownerId) {
+      return next({ status: 403, message: 'You do not have access to this series' });
+    }
+
+    const episode = await Episode.findById(episodeId);
+    if (!episode || episode.series.toString() !== seriesId) {
+      return next({ status: 404, message: 'Episode not found' });
+    }
+
+    if (title !== undefined) {
+      if (!title || typeof title !== 'string' || !title.trim()) {
+        return next({ status: 400, message: 'Title is required' });
+      }
+      episode.title = title.trim();
+    }
+    if (synopsis !== undefined) episode.synopsis = synopsis || '';
+    if (thumbnail !== undefined) episode.thumbnail = thumbnail || '';
+    if (thumbnail !== undefined) episode.thumbnail = thumbnail || '';
+    if (order !== undefined) {
+      if (!Number.isInteger(order) || order < 1) {
+        return next({ status: 400, message: 'order must be a positive integer' });
+      }
+      episode.order = order;
+    }
+    if (releaseDate !== undefined) {
+      const parsed = releaseDate ? new Date(releaseDate) : null;
+      if (parsed && Number.isNaN(parsed.getTime())) {
+        return next({ status: 400, message: 'releaseDate is invalid' });
+      }
+      episode.releaseDate = parsed || undefined;
+    }
+    if (video !== undefined) {
+      if (video && !Types.ObjectId.isValid(video)) {
+        return next({ status: 400, message: 'Invalid video id' });
+      }
+      if (video) {
+        const videoDoc = await Video.findById(video);
+        if (!videoDoc) return next({ status: 404, message: 'Video not found' });
+        if (req.user.role !== 'admin' && videoDoc.owner.toString() !== ownerId) {
+          return next({ status: 403, message: 'You do not have access to this video' });
+        }
+      }
+      episode.video = video || undefined;
+    }
+
+    await episode.save();
+    return sendSuccess(res, episode);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+const deleteEpisode = async (req, res, next) => {
+  try {
+    const ownerId = req.user && req.user.id;
+    const { seriesId, episodeId } = req.params;
+
+    if (!Types.ObjectId.isValid(seriesId) || !Types.ObjectId.isValid(episodeId)) {
+      return next({ status: 400, message: 'Invalid id' });
+    }
+
+    const series = await Series.findById(seriesId);
+    if (!series) {
+      return next({ status: 404, message: 'Series not found' });
+    }
+    if (req.user.role !== 'admin' && series.creator.toString() !== ownerId) {
+      return next({ status: 403, message: 'You do not have access to this series' });
+    }
+
+    const episode = await Episode.findById(episodeId);
+    if (!episode || episode.series.toString() !== seriesId) {
+      return next({ status: 404, message: 'Episode not found' });
+    }
+
+    await episode.deleteOne();
+    return sendSuccess(res, { deleted: true });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   createSeries,
   listSeries,
+  updateSeries,
+  deleteSeries,
   createEpisode,
   listEpisodes,
+  updateEpisode,
+  deleteEpisode,
   createVideo,
-  listVideos
+  updateVideoStatus,
+  listVideos,
+  deleteVideo
 };

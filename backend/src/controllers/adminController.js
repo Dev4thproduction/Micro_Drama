@@ -49,6 +49,7 @@ const listPendingEpisodes = async (req, res, next) => {
 const approveEpisode = async (req, res, next) => {
   try {
     const { episodeId } = req.params;
+    const { note } = req.body || {};
     if (!Types.ObjectId.isValid(episodeId)) {
       return next({ status: 400, message: 'Invalid episodeId' });
     }
@@ -62,6 +63,9 @@ const approveEpisode = async (req, res, next) => {
     }
 
     episode.status = 'published';
+    episode.approvedAt = new Date();
+    episode.approvedBy = req.user && req.user.id;
+    episode.approvalNote = typeof note === 'string' ? note.trim() : undefined;
     await episode.save();
 
     const series = await Series.findById(episode.series);

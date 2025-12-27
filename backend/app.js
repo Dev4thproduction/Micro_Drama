@@ -8,6 +8,9 @@ const creatorRoutes = require('./src/routes/creator.routes');
 const videoRoutes = require('./src/routes/video.routes');
 const adminRoutes = require('./src/routes/admin.routes');
 const contentRoutes = require('./src/routes/content.routes');
+const cmsRoutes = require('./src/routes/cms.routes');
+const webhookRoutes = require('./src/routes/webhook.routes');
+const requestId = require('./src/middleware/requestId');
 const errorHandler = require('./src/middleware/errorHandler');
 const requestLogger = require('./src/middleware/requestLogger');
 
@@ -20,6 +23,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(requestId);
 app.use(requestLogger);
 
 app.use('/health', healthRoutes);
@@ -29,6 +33,8 @@ app.use('/creator', creatorRoutes);
 app.use('/video', videoRoutes);
 app.use('/admin', adminRoutes);
 app.use('/content', contentRoutes);
+app.use('/cms', cmsRoutes);
+app.use('/webhook', webhookRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not Found' });

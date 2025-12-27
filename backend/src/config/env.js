@@ -2,6 +2,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 const env = process.env.NODE_ENV || 'development';
+const useInMemoryDb = process.env.USE_IN_MEMORY_DB === 'true';
 
 // Load from .env in non-production environments
 if (env !== 'production') {
@@ -9,7 +10,11 @@ if (env !== 'production') {
   dotenv.config({ path: envFile });
 }
 
-const required = ['MONGODB_URI', 'JWT_SECRET', 'AWS_REGION', 'AWS_S3_BUCKET'];
+const required = ['JWT_SECRET', 'AWS_REGION', 'AWS_S3_BUCKET'];
+if (!useInMemoryDb) {
+  required.unshift('MONGODB_URI');
+}
+
 const missing = required.filter((key) => !process.env[key]);
 
 if (missing.length) {
@@ -19,7 +24,8 @@ if (missing.length) {
 const config = {
   env,
   isProd: env === 'production',
-  port: parseInt(process.env.PORT, 10) || 3000,
+  port: parseInt(process.env.PORT, 10) || 5000,
+  useInMemoryDb,
   mongoUri: process.env.MONGODB_URI,
   jwtSecret: process.env.JWT_SECRET,
   aws: {

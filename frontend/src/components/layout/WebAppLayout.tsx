@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react';
 import Link from 'next/link';
-import { Home, Compass, User, Film, LogOut, Menu } from 'lucide-react';
+import { Home, Compass, User, Film, LogOut, Menu, Clock, Bookmark } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { clsx } from 'clsx';
 import { usePathname } from 'next/navigation';
@@ -18,8 +18,10 @@ export default function WebAppLayout({ children, user, logout }: WebAppLayoutPro
 
     const NAV_ITEMS = [
         { label: 'For You', href: '/', icon: Home },
+        { label: 'Continue Watching', href: '/history', icon: Clock }, // Use Clock icon
         { label: 'Discover', href: '/discover', icon: Compass },
         { label: 'Following', href: '/following', icon: Film },
+        { label: 'My List', href: '/my-list', icon: Bookmark }, // Use Bookmark icon
     ];
 
     return (

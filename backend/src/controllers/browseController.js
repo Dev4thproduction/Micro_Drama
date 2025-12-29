@@ -19,21 +19,39 @@ const getHome = async (req, res, next) => {
             continueWatching = await WatchHistory.find(query)
                 .sort({ lastWatched: -1 })
                 .limit(10) // Increased limit to filter completed ones potentially
-                .populate('series', 'title posterUrl')
+                .populate('series', 'title posterUrl category')
                 .populate('episode', 'title order thumbnailUrl duration');
 
-            // Filter: Only show uncompleted or recent? 
-            // Requirement says "Show only episodes partially watched".
-            // Let's filter client side or here. 
-            // Usually "Continue Watching" implies unfinished. 
-            // But if I finished Ep 1, it should show Ep 2?
-            // "Resume playback from last saved timestamp" implies showing the SPECIFIC episode that was stopped.
-            // If completed, we usually want to show the NEXT episode.
-            // For now, let's strictly follow "Show only episodes partially watched" and "Resume playback".
-            // We will filter for !completed to keep it simple as per "partially watched".
-
+            // Filter: Only show uncompleted
             continueWatching = continueWatching.filter(h => !h.completed && h.series && h.episode);
             if (continueWatching.length > 5) continueWatching = continueWatching.slice(0, 5);
+        }
+
+        // 1.5 Because You Watched (Recommendation)
+        let becauseYouWatched = null;
+        if (userId || guestId) {
+            const query = userId ? { user: userId } : { guestId };
+            // Get the absolutely last watched item (even if completed)
+            const lastWatched = await WatchHistory.findOne(query)
+                .sort({ lastWatched: -1 })
+                .populate('series', 'category title');
+
+            if (lastWatched && lastWatched.series && lastWatched.series.category) {
+                const recommendations = await Series.find({
+                    category: lastWatched.series.category,
+                    _id: { $ne: lastWatched.series._id }
+                })
+                    .sort({ views: -1 })
+                    .limit(6)
+                    .select('title posterUrl category rating seasonCount views');
+
+                if (recommendations.length > 0) {
+                    becauseYouWatched = {
+                        sourceSeriesTitle: lastWatched.series.title,
+                        items: recommendations
+                    };
+                }
+            }
         }
 
         // 2. Featured Series (Random 1 for Hero Banner)
@@ -86,6 +104,7 @@ const getHome = async (req, res, next) => {
             featured: featured[0] || null,
             featuredProgress,
             continueWatching,
+            becauseYouWatched,
             trending,
             newEpisodes,
             categories

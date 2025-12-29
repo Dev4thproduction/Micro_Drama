@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Lock, User, Save, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Lock, User, Save, Loader2, AlertCircle, CheckCircle, Eye, EyeOff } from 'lucide-react';
 import api from '@/lib/api';
 
 export default function AccountSettings() {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
 
     const [form, setForm] = useState({
         displayName: '',
@@ -71,12 +73,19 @@ export default function AccountSettings() {
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                                 <input
-                                    type="password"
+                                    type={showCurrentPassword ? "text" : "password"}
                                     value={form.currentPassword}
                                     onChange={e => setForm({ ...form, currentPassword: e.target.value })}
-                                    className="w-full h-11 pl-10 pr-4 bg-[#0f1117] border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-gray-600"
+                                    className="w-full h-11 pl-10 pr-10 bg-[#0f1117] border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-gray-600"
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                >
+                                    {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                         </div>
                         <div className="space-y-1.5">
@@ -84,12 +93,19 @@ export default function AccountSettings() {
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
                                 <input
-                                    type="password"
+                                    type={showNewPassword ? "text" : "password"}
                                     value={form.newPassword}
                                     onChange={e => setForm({ ...form, newPassword: e.target.value })}
-                                    className="w-full h-11 pl-10 pr-4 bg-[#0f1117] border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-gray-600"
+                                    className="w-full h-11 pl-10 pr-10 bg-[#0f1117] border border-white/10 rounded-xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-gray-600"
                                     placeholder="••••••••"
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNewPassword(!showNewPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors"
+                                >
+                                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                         </div>
                     </div>

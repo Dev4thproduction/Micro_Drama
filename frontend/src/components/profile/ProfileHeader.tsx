@@ -49,12 +49,14 @@ export default function ProfileHeader({ user, stats, subscription }: ProfileHead
                 {/* Visual Stats */}
                 <div className="hidden md:flex items-center gap-4">
                     <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
-                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Episodes</p>
-                        <p className="text-2xl font-bold text-white leading-none">{stats?.totalEpisodesWatched || 0}</p>
+                        <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Membership</p>
+                        <p className={`text-2xl font-bold leading-none capitalize ${subscription?.status === 'active' ? 'text-green-400' : 'text-gray-400'}`}>
+                            {subscription?.status === 'active' ? 'Paid' : 'Free'}
+                        </p>
                     </div>
                     <div className="px-6 py-3 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm">
                         <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Plan</p>
-                        <p className="text-2xl font-bold text-white leading-none capitalize">{subscription?.plan || 'Free'}</p>
+                        <p className="text-2xl font-bold text-white leading-none capitalize">{subscription?.plan || 'Basic'}</p>
                     </div>
                 </div>
             </div>

@@ -1,28 +1,72 @@
 const express = require('express');
-const router = express.Router();
 const { allowRoles } = require('../middleware/auth');
-const adminController = require('../controllers/adminController');
+const {
+  listPendingSeries,
+  listPendingEpisodes,
+  approveEpisode,
+  toggleSubscription,
+  listAllSeries,
+  listEpisodesBySeries,
+  getAdminStats,
+  listUsers,
+  updateUserStatus,
+  listSubscriptions,
+  updateSubscription,
+  createAdminEpisode,
+  updateAdminEpisode,
+  deleteAdminEpisode,
+  createAdminSeries,
+  listSeasonsBySeries,
+  createSeason,
+  updateSeason,
+  deleteSeason
+} = require('../controllers/adminController');
+const {
+  listCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getCategory,
+  listSeriesByCategory
+} = require('../controllers/categoryController');
 
-// Apply admin check to all routes
+const router = express.Router();
+
 router.use(...allowRoles(['admin']));
 
-// --- DASHBOARD & ANALYTICS ---
-router.get('/stats', adminController.getDashboardStats);
-router.get('/analytics', adminController.getAnalytics);
+// Categories
+router.get('/categories', listCategories);
+router.post('/categories', createCategory);
+router.get('/categories/:categoryId', getCategory);
+router.patch('/categories/:categoryId', updateCategory);
+router.delete('/categories/:categoryId', deleteCategory);
+router.get('/categories/:categoryId/series', listSeriesByCategory);
 
-// --- USER MANAGEMENT ---
-router.get('/users', adminController.getUsers);
-router.patch('/users/:userId/status', adminController.updateUserStatus);
-router.post('/create-admin', adminController.createAdmin);
+// Series, Seasons & Episodes
+router.get('/series/pending', listPendingSeries);
+router.get('/episodes/pending', listPendingEpisodes);
+router.post('/episodes/:episodeId/approve', approveEpisode);
+router.get('/series', listAllSeries);
+router.post('/series', createAdminSeries);
+router.get('/series/:seriesId/seasons', listSeasonsBySeries);
+router.post('/series/:seriesId/seasons', createSeason);
+router.patch('/seasons/:seasonId', updateSeason);
+router.delete('/seasons/:seasonId', deleteSeason);
+router.get('/series/:seriesId/episodes', listEpisodesBySeries);
+router.post('/series/:seriesId/episodes', createAdminEpisode);
+router.patch('/episodes/:episodeId', updateAdminEpisode);
+router.delete('/episodes/:episodeId', deleteAdminEpisode);
 
-// --- MODERATION ---
-router.get('/series/pending', adminController.listPendingSeries);
-router.get('/episodes/pending', adminController.listPendingEpisodes);
-router.post('/episodes/:episodeId/approve', adminController.approveEpisode);
-router.patch('/reject-episode/:episodeId', adminController.rejectEpisode);
+// Stats
+router.get('/stats', getAdminStats);
 
-// --- SUBSCRIPTIONS ---
-router.get('/subscriptions', adminController.getSubscribers);
-router.post('/users/:userId/subscription', adminController.toggleSubscription);
+// User management
+router.get('/users', listUsers);
+router.patch('/users/:userId', updateUserStatus);
+router.post('/users/:userId/subscription', toggleSubscription);
+
+// Subscription management
+router.get('/subscriptions', listSubscriptions);
+router.patch('/subscriptions/:subscriptionId', updateSubscription);
 
 module.exports = router;

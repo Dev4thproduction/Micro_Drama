@@ -371,6 +371,7 @@ export default function SeriesEpisodesPage() {
                 </div>
             </div>
 
+            {/* Error Message */}
             {error && (
                 <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                     {error}
@@ -696,8 +697,14 @@ export default function SeriesEpisodesPage() {
                                     disabled={saving || !formVideoUrl || !formTitle.trim()}
                                     className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_0_18px_rgba(19,91,236,0.35)] transition-all hover:bg-primary/90 disabled:opacity-50"
                                 >
-                                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
-                                    Add Episode
+                                    {saving ? (
+                                        <Loader2 size={16} className="animate-spin" />
+                                    ) : editingEpisode ? (
+                                        <RefreshCw size={16} />
+                                    ) : (
+                                        <Plus size={16} />
+                                    )}
+                                    {editingEpisode ? 'Save Changes' : 'Add Episode'}
                                 </button>
                             </div>
                         </form>

@@ -214,13 +214,44 @@ const getSubscribers = async (req, res, next) => {
 // --- 5. ANALYTICS ---
 const getAnalytics = async (req, res, next) => {
   try {
-    // Return mock data for now. Connect to WatchHistory aggregation later.
-    const genreStats = [
-       { _id: 'Sci-Fi', count: 450 },
-       { _id: 'Romance', count: 320 },
-       { _id: 'Thriller', count: 210 }
-    ];
-    return sendSuccess(res, { genreStats });
+    const { episodeId } = req.params;
+    const {
+      title, synopsis, order, releaseDate, status,
+      videoUrl, videoPublicId, thumbnailUrl, duration
+    } = req.body || {};
+
+    if (!Types.ObjectId.isValid(episodeId)) {
+      return next({ status: 400, message: 'Invalid episodeId' });
+    }
+
+    const episode = await Episode.findById(episodeId);
+    if (!episode) {
+      return next({ status: 404, message: 'Episode not found' });
+    }
+
+    if (title && typeof title === 'string') episode.title = title.trim();
+    if (typeof synopsis === 'string') episode.synopsis = synopsis;
+    if (Number.isInteger(order) && order >= 1) episode.order = order;
+
+    if (releaseDate) {
+      const parsed = new Date(releaseDate);
+      if (!Number.isNaN(parsed.getTime())) {
+        episode.releaseDate = parsed;
+      }
+    }
+
+    const allowedStatuses = ['pending', 'draft', 'scheduled', 'published', 'archived'];
+    if (status && allowedStatuses.includes(status)) {
+      episode.status = status;
+    }
+
+    if (typeof videoUrl === 'string') episode.videoUrl = videoUrl;
+    if (typeof videoPublicId === 'string') episode.videoPublicId = videoPublicId;
+    if (typeof thumbnailUrl === 'string') episode.thumbnailUrl = thumbnailUrl;
+    if (typeof duration === 'number') episode.duration = duration;
+
+    await episode.save();
+    return sendSuccess(res, episode);
   } catch (err) {
     return next(err);
   }

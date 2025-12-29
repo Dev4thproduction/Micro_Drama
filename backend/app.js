@@ -14,6 +14,7 @@ const subscriptionRoutes = require('./src/routes/subscription.routes');
 const feedRoutes = require('./src/routes/feed.routes');
 const browseRoutes = require('./src/routes/browse.routes');
 const analyticsRoutes = require('./src/routes/analytics.routes');
+const trendingRoutes = require('./src/routes/trending.routes');
 
 
 const app = express();
@@ -38,6 +39,7 @@ app.use('/subscriptions', subscriptionRoutes);
 app.use('/feed', feedRoutes);
 app.use('/browse', browseRoutes);
 app.use('/analytics', analyticsRoutes);
+app.use('/trending', trendingRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not Found' });

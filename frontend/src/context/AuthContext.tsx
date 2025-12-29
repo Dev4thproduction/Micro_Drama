@@ -18,7 +18,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   // UPDATE 1: Add displayName to the type definition here
-  register: (email: string, password: string, role: string, displayName: string) => Promise<void>; 
+  register: (email: string, password: string, role: string, displayName: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const handleRedirect = (role: string) => {
     if (role === 'admin') {
-      router.push('/dashboard');
+      router.push('/admin');
     } else {
       router.push('/');
     }
@@ -70,13 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string, role: string, displayName: string) => {
     try {
       // Pass displayName to backend
-      const { data } = await api.post('/auth/register', { 
-        email, 
-        password, 
-        role, 
-        displayName 
+      const { data } = await api.post('/auth/register', {
+        email,
+        password,
+        role,
+        displayName
       });
-      
+
       const { token: newToken, user: newUser } = data.data;
 
       setToken(newToken);

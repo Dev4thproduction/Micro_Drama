@@ -54,11 +54,25 @@ const getHome = async (req, res, next) => {
             }
         }
 
-        // 2. Featured Series (Random 1 for Hero Banner)
-        const featured = await Series.aggregate([
-            { $match: {} }, // Show ALL statuses for debugging
-            { $sample: { size: 1 } }
-        ]);
+        // 2. Featured Series (Priority: Continue Watching > Random)
+        let featured = [];
+        if (userId || guestId) {
+            const query = userId ? { user: userId } : { guestId };
+            const lastInteracted = await WatchHistory.findOne(query)
+                .sort({ lastWatched: -1 })
+                .populate('series');
+
+            if (lastInteracted && lastInteracted.series) {
+                featured = [lastInteracted.series];
+            }
+        }
+
+        if (featured.length === 0) {
+            featured = await Series.aggregate([
+                { $match: { status: 'published' } },
+                { $sample: { size: 1 } }
+            ]);
+        }
 
         // 3. Trending (Sorted by Views)
         const trending = await Series.find({}) // Show ALL statuses
@@ -279,4 +293,62 @@ const getSeriesEpisodes = async (req, res, next) => {
     }
 };
 
-module.exports = { getHome, getSeriesEpisodes, getDiscover, getSeriesDetails };
+const getFollowingUpdates = async (req, res, next) => {
+    try {
+        const userId = req.user?.id;
+        const guestId = req.headers['x-guest-id'];
+        const { seriesIds } = req.body;
+
+        if (!seriesIds || !Array.isArray(seriesIds) || seriesIds.length === 0) {
+            return sendSuccess(res, []);
+        }
+
+        // 1. Fetch Series Basic Info
+        const seriesList = await Series.find({
+            _id: { $in: seriesIds },
+            status: 'published'
+        }).select('title posterUrl category');
+
+        const updates = [];
+
+        // 2. For each series, check latest episode and watch status
+        for (const series of seriesList) {
+            const latestEpisode = await Episode.findOne({
+                series: series._id,
+                status: 'published'
+            })
+                .sort({ order: -1 }) // Assuming order correlates with release, or use createdAt/releaseDate
+                .select('title order thumbnailUrl createdAt releaseDate');
+
+            if (!latestEpisode) continue;
+
+            let isWatched = false;
+            if (userId || guestId) {
+                const query = userId ? { user: userId } : { guestId };
+                const history = await WatchHistory.findOne({
+                    ...query,
+                    episode: latestEpisode._id,
+                    completed: true
+                });
+                if (history) isWatched = true;
+            }
+
+            if (!isWatched) {
+                updates.push({
+                    series,
+                    latestEpisode,
+                    isNew: true // Flag for frontend
+                });
+            }
+        }
+
+        // Sort by latest release date
+        updates.sort((a, b) => new Date(b.latestEpisode.createdAt) - new Date(a.latestEpisode.createdAt));
+
+        return sendSuccess(res, updates);
+    } catch (err) {
+        return next(err);
+    }
+};
+
+module.exports = { getHome, getSeriesEpisodes, getDiscover, getSeriesDetails, getFollowingUpdates };

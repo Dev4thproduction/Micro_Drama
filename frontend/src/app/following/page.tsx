@@ -3,34 +3,30 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import WebAppLayout from '@/components/layout/WebAppLayout';
-import SeriesCard from '@/components/browse/SeriesCard';
 import api from '@/lib/api';
-import { Film, Loader2, Sparkles } from 'lucide-react';
+import { Film, Loader2, Play, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function FollowingPage() {
     const { user, logout } = useAuth();
-    const [series, setSeries] = useState<any[]>([]);
+    const [updates, setUpdates] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // "Following" maps to "My List" conceptually for this app
         const storedList = localStorage.getItem('myList');
         const ids = storedList ? JSON.parse(storedList) : [];
 
         if (ids.length > 0) {
-            fetchFollowedSeries(ids);
+            fetchUpdates(ids);
         } else {
             setLoading(false);
         }
-    }, []);
+    }, [user]); // Re-fetch if user status changes (e.g. login) to check watch history
 
-    const fetchFollowedSeries = async (ids: string[]) => {
+    const fetchUpdates = async (ids: string[]) => {
         try {
-            // Fetch series, ideally we'd want to sort by 'lastUpdated' to show new content
-            // We'll trust the backend returns them in order or client-side sort if needed
-            const res = await api.get(`/browse/discover?ids=${ids.join(',')}`); // &sort=updated (if supported)
-            setSeries(res.data?.data || res.data);
+            const res = await api.post('/browse/following', { seriesIds: ids });
+            setUpdates(res.data?.data || res.data);
         } catch (err) {
             console.error(err);
         } finally {
@@ -47,7 +43,7 @@ export default function FollowingPage() {
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-white">Following</h1>
-                        <p className="text-sm text-gray-400">Updates from series you follow</p>
+                        <p className="text-sm text-gray-400">New episodes from series you follow</p>
                     </div>
                 </div>
 
@@ -55,19 +51,60 @@ export default function FollowingPage() {
                     <div className="flex justify-center py-20">
                         <Loader2 className="text-primary animate-spin" size={32} />
                     </div>
-                ) : series.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-center text-gray-400">
-                        <Sparkles size={48} className="mb-4 opacity-50" />
-                        <h3 className="text-lg font-semibold text-white mb-2">No Updates Yet</h3>
-                        <p className="max-w-xs mx-auto">Follow series (add to My List) to see their latest updates here.</p>
-                        <Link href="/discover" className="mt-6 px-6 py-2 bg-white/5 hover:bg-white/10 rounded-full font-bold text-white transition-colors">
-                            Discover Content
+                ) : updates.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 text-center text-gray-400 bg-[#161b22] rounded-3xl border border-white/5">
+                        <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4 text-green-500">
+                            <CheckCircle size={32} />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">You're all caught up!</h3>
+                        <p className="max-w-xs mx-auto text-sm text-gray-500">No new episodes from your followed series. We'll show them here when they drop.</p>
+
+                        <Link href="/discover" className="mt-8 px-8 py-3 bg-primary hover:bg-primary/90 rounded-xl font-bold text-white transition-all shadow-lg hover:shadow-primary/20">
+                            Find New Series
                         </Link>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                        {series.map((item) => (
-                            <SeriesCard key={item._id} series={item} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {updates.map((item) => (
+                            <Link
+                                key={item.series._id}
+                                href={`/series/${item.series._id}?ep=${item.latestEpisode._id}`}
+                                className="group flex bg-[#161b22] border border-white/5 hover:border-primary/50 rounded-2xl overflow-hidden transition-all hover:-translate-y-1 hover:shadow-2xl"
+                            >
+                                {/* Poster */}
+                                <div className="w-32 md:w-40 shrink-0 relative bg-black/40">
+                                    <img
+                                        src={item.series.posterUrl}
+                                        alt={item.series.title}
+                                        className="w-full h-full object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                                    />
+                                    <div className="absolute top-2 left-2">
+                                        <div className="px-2 py-1 rounded bg-primary text-white text-[10px] font-bold uppercase tracking-wider shadow-lg animate-pulse">
+                                            New
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Content */}
+                                <div className="p-5 flex flex-col justify-center flex-1">
+                                    <h3 className="font-bold text-lg text-white mb-1 leading-tight group-hover:text-primary transition-colors">
+                                        {item.series.title}
+                                    </h3>
+
+                                    <div className="mt-auto pt-4">
+                                        <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">
+                                            Latest Update
+                                        </p>
+                                        <p className="text-sm text-white font-medium truncate mb-4">
+                                            Episode {item.latestEpisode.order}: {item.latestEpisode.title}
+                                        </p>
+
+                                        <button className="w-full py-2.5 rounded-lg bg-white/5 group-hover:bg-primary/20 text-white group-hover:text-primary text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all">
+                                            <Play size={14} fill="currentColor" /> Watch Now
+                                        </button>
+                                    </div>
+                                </div>
+                            </Link>
                         ))}
                     </div>
                 )}

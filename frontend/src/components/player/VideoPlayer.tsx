@@ -28,27 +28,42 @@ export default function VideoPlayer({ src, poster, isActive, onEnded, onTimeUpda
         }
     }, [isActive, startTime]);
 
-    // Handle active state changes
+    // Handle active state changes safely
     useEffect(() => {
-        if (!videoRef.current) return;
+        const video = videoRef.current;
+        if (!video) return;
+
+        let playPromise: Promise<void> | undefined;
 
         if (isActive) {
-            const playPromise = videoRef.current.play();
+            playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise
-                    .then(() => setIsPlaying(true))
-                    .catch(() => setIsPlaying(false));
+                    .then(() => {
+                        if (isActive) setIsPlaying(true);
+                    })
+                    .catch((error) => {
+                        // Ignore AbortError which happens when pausing immediately after playing
+                        if (error.name !== 'AbortError') {
+                            console.error("Video play error:", error);
+                        }
+                        setIsPlaying(false);
+                    });
             }
         } else {
-            videoRef.current.pause();
-            // Do NOT reset to 0 here automatically if we want to resume later? 
-            // The original code reset it: videoRef.current.currentTime = 0; 
-            // If we are scrolling away, resetting is fine, but if we come back?
-            // "Resume ... matter more".
-            // If I scroll away and come back, I expect to resume. 
-            // So I should REMOVE the auto-reset to 0.
+            // Safe pause
+            if (!video.paused) {
+                video.pause();
+            }
             setIsPlaying(false);
         }
+
+        return () => {
+            // Cleanup: ensure paused if component unmounts or dependency changes making it inactive
+            if (!video.paused) {
+                video.pause();
+            }
+        };
     }, [isActive]);
 
     const togglePlay = () => {

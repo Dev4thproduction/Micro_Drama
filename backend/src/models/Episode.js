@@ -10,7 +10,8 @@ const EpisodeSchema = new mongoose.Schema(
     order: { type: Number, required: true, min: 1 },
     releaseDate: { type: Date },
     status: { type: String, enum: episodeStatuses, default: 'pending' },
-    video: { type: mongoose.Schema.Types.ObjectId, ref: 'Video' }
+    video: { type: mongoose.Schema.Types.ObjectId, ref: 'Video' },
+    rejectionReason: { type: String, default: null },
   },
   { timestamps: true }
 );

@@ -5,14 +5,27 @@ import { useAuth } from '@/context/AuthContext';
 import { 
   Search, Menu, Zap, Play, Bookmark, Flame, Clock, 
   ChevronRight, Mail, Twitter, Instagram, Globe, 
-  Sparkles, TrendingUp, LogOut, LayoutDashboard, User
+  Sparkles, TrendingUp, LogOut, LayoutDashboard, Settings, User
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export default function HomePage() {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0f1117] text-white font-display selection:bg-primary/30 overflow-x-hidden">
@@ -61,30 +74,47 @@ export default function HomePage() {
             <div className="flex items-center gap-3">
               {/* DYNAMIC AUTH BUTTONS */}
               {user ? (
-                <div className="flex items-center gap-3">
-                  {/* ADMIN ONLY BUTTON */}
-                  {user.role === 'admin' && (
-                    <Link href="/dashboard">
-                      <button className="hidden sm:flex h-10 px-4 items-center gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold transition-all shadow-[0_0_15px_rgba(19,91,236,0.3)]">
-                        <LayoutDashboard size={16} />
-                        Dashboard
-                      </button>
-                    </Link>
-                  )}
+                <div className="relative" ref={profileRef}>
+                   <button 
+                     onClick={() => setIsProfileOpen(!isProfileOpen)}
+                     className="flex items-center gap-3 pl-2 py-1 pr-1 border-l border-white/10 hover:bg-white/5 rounded-r-xl transition-colors"
+                   >
+                      <div className="text-right hidden sm:block">
+                        <p className="text-xs font-bold text-white leading-none">{user.displayName || 'User'}</p>
+                        <p className="text-[10px] text-gray-500 leading-none mt-1 uppercase">{user.role}</p>
+                      </div>
+                      <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-sm font-bold ring-2 ring-[#0f1117] cursor-pointer hover:ring-primary transition-all">
+                        {user.displayName?.[0] || user.email[0].toUpperCase()}
+                      </div>
+                   </button>
 
-                  {/* User Profile / Logout Dropdown (Simplified as buttons for now) */}
-                  <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-                    <div className="size-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-xs font-bold ring-2 ring-[#0f1117] cursor-pointer hover:ring-primary transition-all">
-                      {user.displayName?.[0] || user.email[0].toUpperCase()}
-                    </div>
-                    <button 
-                      onClick={logout}
-                      className="p-2 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
-                      title="Sign Out"
-                    >
-                      <LogOut size={20} />
-                    </button>
-                  </div>
+                   {/* DROPDOWN MENU */}
+                   {isProfileOpen && (
+                     <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#161b22] border border-white/10 shadow-2xl overflow-hidden animate-fade-in z-50">
+                        <div className="p-3 border-b border-white/5 bg-white/5">
+                           <p className="text-sm font-bold text-white truncate">{user.displayName}</p>
+                           <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                        </div>
+                        <div className="p-1">
+                          {user.role === 'admin' && (
+                             <Link href="/dashboard" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-primary hover:text-white rounded-lg transition-colors">
+                               <LayoutDashboard size={16} /> Dashboard
+                             </Link>
+                          )}
+                          <Link href="/settings" className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-primary hover:text-white rounded-lg transition-colors">
+                             <Settings size={16} /> Settings
+                          </Link>
+                        </div>
+                        <div className="p-1 border-t border-white/5">
+                           <button 
+                             onClick={logout}
+                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors"
+                           >
+                             <LogOut size={16} /> Sign Out
+                           </button>
+                        </div>
+                     </div>
+                   )}
                 </div>
               ) : (
                 /* GUEST VIEW */
@@ -106,9 +136,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Rest of the HomePage content remains exactly the same... */}
-      {/* ... (Keep the <main> and <footer> sections from previous turn) ... */}
-       <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
 
         {/* ---------------- HERO SECTION ---------------- */}
         <section className="relative w-full overflow-hidden rounded-[2rem] bg-[#161b22] border border-white/5 shadow-2xl group isolate">
@@ -171,27 +199,6 @@ export default function HomePage() {
             </div>
           </div>
         </section>
-
-
-        {/* ---------------- CATEGORIES / CHIPS ---------------- */}
-        <section className="w-full">
-          <div className="flex gap-3 overflow-x-auto pb-6 pt-2 no-scrollbar mask-gradient-right">
-            {['All', 'Sci-Fi', 'Romance', 'Thriller', 'Fantasy', 'Drama', 'Mystery', 'Comedy', 'Action', 'Documentary', 'Horror'].map((cat, i) => (
-              <button 
-                key={cat}
-                className={clsx(
-                  "flex items-center justify-center h-11 px-6 rounded-full text-sm font-semibold transition-all hover:-translate-y-1 hover:shadow-lg whitespace-nowrap border",
-                  i === 0 
-                    ? "bg-primary text-white border-primary shadow-[0_4px_20px_rgba(19,91,236,0.3)]" 
-                    : "bg-[#161b22] border-white/5 text-gray-400 hover:border-primary/50 hover:text-white hover:bg-[#1c2128]"
-                )}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </section>
-
 
         {/* ---------------- TRENDING SECTION ---------------- */}
         <section className="space-y-8">
@@ -256,112 +263,11 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ---------------- NEW ARRIVALS (Glass Cards) ---------------- */}
-        <section className="space-y-8">
-           <div className="flex items-center justify-between border-b border-white/5 pb-4">
-            <h2 className="text-3xl font-bold flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg text-green-500">
-                <TrendingUp size={24} />
-              </div>
-              New Arrivals
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-             {[
-               { title: "The Mind's Eye", desc: "Can you trust your own memories?", color: "bg-pink-500" },
-               { title: "Winter Bloom", desc: "Love in the coldest winter.", color: "bg-blue-500" },
-               { title: "Last Summer", desc: "A nostalgic trip back to 1989.", color: "bg-orange-500" },
-             ].map((item, i) => (
-               <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-[#161b22] border border-white/5 hover:border-white/10 hover:bg-[#1c2128] transition-all cursor-pointer group">
-                  <div className={`size-20 rounded-xl ${item.color}/20 flex items-center justify-center text-white shrink-0`}>
-                      <Play size={24} className={`${item.color.replace('bg-', 'text-')} opacity-80 group-hover:scale-110 transition-transform`} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors">{item.title}</h3>
-                    <p className="text-sm text-gray-500 line-clamp-1">{item.desc}</p>
-                    <div className="mt-2 flex gap-2">
-                       <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-gray-400">New</span>
-                       <span className="text-[10px] bg-white/5 px-2 py-0.5 rounded text-gray-400">HD</span>
-                    </div>
-                  </div>
-                  <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 duration-300">
-                    <ChevronRight className="text-gray-600" />
-                  </div>
-               </div>
-             ))}
-          </div>
-        </section>
-
-
-        {/* ---------------- NEWSLETTER CTA ---------------- */}
-        <section className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary to-purple-700 text-white p-8 md:p-12 lg:p-20 shadow-2xl">
-          <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
-          {/* Cinematic Glows */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-white/20 rounded-full blur-[100px] -mr-20 -mt-20 mix-blend-overlay"></div>
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-black/20 rounded-full blur-[100px] -ml-20 -mb-20 mix-blend-multiply"></div>
-          
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-12">
-            <div className="space-y-6 max-w-xl text-center md:text-left">
-              <h2 className="text-4xl md:text-5xl font-black tracking-tight drop-shadow-md">
-                Stories delivered <br/> straight to you.
-              </h2>
-              <p className="text-blue-100 text-lg font-medium leading-relaxed opacity-90">
-                Get the best new micro-dramas, hand-picked by our editors, sent to your inbox every Friday. No spam, just cinema.
-              </p>
-            </div>
-            <div className="w-full max-w-md bg-white/10 backdrop-blur-lg p-2 rounded-2xl border border-white/20 shadow-xl">
-              <form className="flex flex-col sm:flex-row gap-2">
-                <input 
-                  type="email" 
-                  placeholder="Your email address" 
-                  className="w-full px-5 py-4 rounded-xl text-gray-900 border-none focus:ring-4 focus:ring-white/30 placeholder:text-gray-500 outline-none bg-white/90"
-                />
-                <button type="button" className="px-8 py-4 bg-[#0f1117] text-white font-bold rounded-xl hover:bg-black transition-all shadow-lg shrink-0 hover:scale-105 active:scale-95">
-                  Subscribe
-                </button>
-              </form>
-            </div>
-          </div>
-        </section>
-
       </main>
 
       {/* ---------------- FOOTER ---------------- */}
       <footer className="mt-24 border-t border-white/5 bg-[#0b0d11]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
-            <div className="col-span-2 md:col-span-1 space-y-6">
-              <div className="flex items-center gap-3">
-                 <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
-                    <Zap className="text-primary fill-current" size={22} />
-                 </div>
-                 <span className="text-2xl font-bold text-white tracking-tight">Micro-Drama</span>
-              </div>
-              <p className="text-sm text-gray-500 leading-relaxed">
-                Discover worlds within minutes. The premier platform for vertical short fiction, designed for the modern era.
-              </p>
-            </div>
-            
-            {[
-              { title: "Discover", links: ["Trending", "New Arrivals", "Staff Picks", "Genres"] },
-              { title: "Writers", links: ["Submit a Story", "Guidelines", "Competitions", "Monetization"] },
-              { title: "Legal", links: ["Terms of Service", "Privacy Policy", "Cookie Policy", "Security"] },
-            ].map((col) => (
-              <div key={col.title}>
-                <h4 className="font-bold text-white mb-6 text-lg">{col.title}</h4>
-                <ul className="space-y-3 text-sm text-gray-500">
-                  {col.links.map(link => (
-                    <li key={link}><a href="#" className="hover:text-primary transition-colors flex items-center gap-2 group">
-                      <span className="w-0 group-hover:w-2 h-[1px] bg-primary transition-all"></span>
-                      {link}
-                    </a></li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          
           <div className="pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-6 text-sm text-gray-600">
             <p>© 2025 Micro-Drama Inc. All rights reserved.</p>
             <div className="flex gap-6">

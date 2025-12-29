@@ -9,6 +9,7 @@ interface User {
   email: string;
   role: 'viewer' | 'creator' | 'admin';
   displayName?: string;
+  lastActive?: string;
 }
 
 interface AuthContextType {
@@ -16,7 +17,8 @@ interface AuthContextType {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, role: string) => Promise<void>;
+  // UPDATE 1: Add displayName to the type definition here
+  register: (email: string, password: string, role: string, displayName: string) => Promise<void>; 
   logout: () => void;
 }
 
@@ -28,7 +30,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
-  // Helper to handle redirection based on role
   const handleRedirect = (role: string) => {
     if (role === 'admin') {
       router.push('/dashboard');
@@ -65,9 +66,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (email: string, password: string, role: string) => {
+  // UPDATE 2: Add displayName to arguments and payload
+  const register = async (email: string, password: string, role: string, displayName: string) => {
     try {
-      const { data } = await api.post('/auth/register', { email, password, role });
+      // Pass displayName to backend
+      const { data } = await api.post('/auth/register', { 
+        email, 
+        password, 
+        role, 
+        displayName 
+      });
+      
       const { token: newToken, user: newUser } = data.data;
 
       setToken(newToken);

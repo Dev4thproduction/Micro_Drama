@@ -11,8 +11,6 @@ import {
   EyeOff, 
   ArrowRight,
   Zap,
-  Briefcase,
-  Clapperboard,
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
@@ -24,7 +22,7 @@ export default function RegisterPage() {
     displayName: '',
     email: '', 
     password: '', 
-    role: 'viewer' 
+    role: 'viewer' // Defaults to viewer automatically
   });
   
   const [showPassword, setShowPassword] = useState(false);
@@ -50,9 +48,11 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      await register(formData.email, formData.password, formData.role);
+      // Pass 'viewer' (from formData.role) and the display name
+      await register(formData.email, formData.password, formData.role, formData.displayName);
     } catch (err: any) {
       setError(err.message || 'Registration failed');
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -84,12 +84,12 @@ export default function RegisterPage() {
             <h1 className="text-5xl font-bold leading-tight drop-shadow-2xl">
               Start your journey<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
-                as a creator or fan.
+                into vertical entertainment.
               </span>
             </h1>
             <p className="text-lg text-gray-300/90 leading-relaxed font-light">
-              Join thousands of users defining the future of vertical entertainment. 
-              Upload, watch, and monetize in minutes.
+              Join thousands of users defining the future of short-form drama. 
+              Watch anywhere, anytime.
             </p>
           </div>
 
@@ -110,7 +110,7 @@ export default function RegisterPage() {
           
           <div className="mb-8 space-y-2 text-center lg:text-left">
             <h2 className="text-3xl font-bold tracking-tight">Create Account</h2>
-            <p className="text-gray-400">Join the platform tailored for vertical video.</p>
+            <p className="text-gray-400">Sign up to start watching.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -132,7 +132,7 @@ export default function RegisterPage() {
                 </div>
                 <input
                   type="text"
-                  placeholder="e.g. Alex Creator"
+                  placeholder="e.g. Alex"
                   className="block w-full rounded-xl border border-gray-800 bg-[#161b22]/80 pl-11 pr-4 py-3.5 text-gray-100 placeholder:text-gray-600 focus:border-primary focus:ring-1 focus:ring-primary focus:bg-[#161b22] transition-all duration-200 outline-none hover:border-gray-700"
                   value={formData.displayName}
                   onChange={(e) => setFormData({...formData, displayName: e.target.value})}
@@ -155,39 +155,6 @@ export default function RegisterPage() {
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
                 />
-              </div>
-            </div>
-
-            {/* Role Selection (Custom Cards) */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-gray-300 ml-1">I want to...</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, role: 'viewer'})}
-                  className={clsx(
-                    "flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all duration-200",
-                    formData.role === 'viewer' 
-                      ? "bg-primary/10 border-primary text-primary shadow-[0_0_15px_rgba(19,91,236,0.15)]" 
-                      : "bg-[#161b22]/80 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-[#1c2128]"
-                  )}
-                >
-                  <Clapperboard size={20} />
-                  <span className="text-sm font-medium">Watch</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData({...formData, role: 'creator'})}
-                  className={clsx(
-                    "flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all duration-200",
-                    formData.role === 'creator' 
-                      ? "bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.15)]" 
-                      : "bg-[#161b22]/80 border-gray-800 text-gray-400 hover:border-gray-700 hover:bg-[#1c2128]"
-                  )}
-                >
-                  <Briefcase size={20} />
-                  <span className="text-sm font-medium">Create</span>
-                </button>
               </div>
             </div>
 

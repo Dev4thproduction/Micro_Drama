@@ -102,4 +102,44 @@ const login = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login };
+const updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id; // from auth middleware
+    const { displayName, currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return next({ status: 404, message: 'User not found' });
+
+    // Update Display Name
+    if (displayName) {
+      user.displayName = displayName;
+    }
+
+    // Update Password (if provided)
+    if (newPassword) {
+      if (!currentPassword) {
+        return next({ status: 400, message: 'Current password is required to set a new one' });
+      }
+      
+      const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isMatch) {
+        return next({ status: 401, message: 'Incorrect current password' });
+      }
+
+      user.passwordHash = await bcrypt.hash(newPassword, 10);
+    }
+
+    await user.save();
+
+    return sendSuccess(res, {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      displayName: user.displayName
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+module.exports = { register, login, updateProfile };

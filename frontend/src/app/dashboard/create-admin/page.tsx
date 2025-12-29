@@ -1,32 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import api from '@/lib/api';
 import { 
   Shield, 
   User, 
   Mail, 
   Lock, 
-  Key, 
-  CheckCircle, 
-  AlertTriangle,
-  Eye,
+  Eye, 
   EyeOff,
-  UserPlus
+  UserPlus,
+  AlertCircle,
+  CheckCircle
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { Button } from '@/components/ui/Button';
 
 export default function CreateAdminPage() {
   const [formData, setFormData] = useState({
     displayName: '',
     email: '',
-    password: '',
-    masterKey: ''
+    password: ''
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
-  const [showMasterKey, setShowMasterKey] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{type: 'success'|'error', text: string} | null>(null);
 
   // Simple strength meter logic
   const getStrength = (pass: string) => {
@@ -42,9 +40,20 @@ export default function CreateAdminPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => setIsSubmitting(false), 2000);
+    setLoading(true);
+    setMessage(null);
+
+    try {
+      // Calls the dedicated admin creation route
+      await api.post('/admin/create-admin', formData);
+      
+      setMessage({ type: 'success', text: 'New Admin created successfully!' });
+      setFormData({ displayName: '', email: '', password: '' }); // Reset form
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to create admin.' });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -69,6 +78,17 @@ export default function CreateAdminPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
           
+          {/* Status Message */}
+          {message && (
+             <div className={clsx(
+               "p-4 rounded-xl flex items-center gap-3 text-sm font-bold border",
+               message.type === 'success' ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-red-500/10 text-red-400 border-red-500/20"
+             )}>
+                {message.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                {message.text}
+             </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Display Name */}
@@ -162,22 +182,21 @@ export default function CreateAdminPage() {
             </div>
           </div>
 
-          {/* ---------------- MASTER KEY ZONE ---------------- */}
-
           {/* Actions */}
           <div className="flex gap-4 pt-4">
             <button 
               type="button" 
+              onClick={() => setFormData({ displayName: '', email: '', password: '' })}
               className="flex-1 py-4 rounded-xl border border-white/10 text-gray-400 font-bold hover:bg-white/5 hover:text-white transition-colors"
             >
-              Cancel
+              Clear
             </button>
             <button 
               type="submit" 
-              disabled={isSubmitting}
+              disabled={loading}
               className="flex-[2] py-4 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold shadow-[0_0_20px_rgba(19,91,236,0.3)] hover:shadow-[0_0_30px_rgba(19,91,236,0.5)] transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? (
+              {loading ? (
                  <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               ) : (
                  <>
@@ -190,11 +209,6 @@ export default function CreateAdminPage() {
 
         </form>
       </div>
-
-      <p className="text-center text-xs text-gray-600 mt-8">
-        Action logged: {new Date().toLocaleDateString()} • IP: 192.168.x.x
-      </p>
-
     </div>
   );
 }

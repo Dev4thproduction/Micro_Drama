@@ -10,6 +10,8 @@ const adminRoutes = require('./src/routes/admin.routes');
 const contentRoutes = require('./src/routes/content.routes');
 const errorHandler = require('./src/middleware/errorHandler');
 const requestLogger = require('./src/middleware/requestLogger');
+const subscriptionRoutes = require('./src/routes/subscription.routes');
+
 
 const app = express();
 
@@ -29,6 +31,7 @@ app.use('/creator', creatorRoutes);
 app.use('/video', videoRoutes);
 app.use('/admin', adminRoutes);
 app.use('/content', contentRoutes);
+app.use('/subscriptions', subscriptionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Not Found' });

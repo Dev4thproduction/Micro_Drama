@@ -55,7 +55,7 @@ export default function WebAppLayout({ children, user, logout }: WebAppLayoutPro
                 <div className="p-4 border-t border-white/5">
                     {user ? (
                         <div className="space-y-3">
-                            <div className="flex items-center gap-3 px-4">
+                            <Link href="/profile" className="flex items-center gap-3 px-4 py-2 hover:bg-white/5 rounded-xl transition-colors">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-primary flex items-center justify-center font-bold text-xs ring-2 ring-black">
                                     {user.displayName?.[0] || user.email[0].toUpperCase()}
                                 </div>
@@ -63,7 +63,7 @@ export default function WebAppLayout({ children, user, logout }: WebAppLayoutPro
                                     <p className="text-sm font-bold truncate">{user.displayName || 'User'}</p>
                                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                                 </div>
-                            </div>
+                            </Link>
                             <button
                                 onClick={logout}
                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"

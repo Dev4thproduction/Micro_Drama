@@ -120,7 +120,7 @@ const updateProfile = async (req, res, next) => {
       if (!currentPassword) {
         return next({ status: 400, message: 'Current password is required to set a new one' });
       }
-      
+
       const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
       if (!isMatch) {
         return next({ status: 401, message: 'Incorrect current password' });
@@ -142,4 +142,42 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { register, login, updateProfile };
+const WatchHistory = require('../models/WatchHistory');
+const Subscription = require('../models/Subscription');
+
+const getProfileStats = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const [
+      user,
+      watchHistory,
+      subscription,
+      totalEpisodesWatched
+    ] = await Promise.all([
+      User.findById(userId).select('-passwordHash'),
+      WatchHistory.find({ user: userId })
+        .sort({ lastWatched: -1 })
+        .limit(10)
+        .populate('series', 'title posterUrl')
+        .populate('episode', 'title order thumbnailUrl duration'),
+      Subscription.findOne({ user: userId }),
+      WatchHistory.countDocuments({ user: userId, completed: true })
+    ]);
+
+    if (!user) return next({ status: 404, message: 'User not found' });
+
+    return sendSuccess(res, {
+      user,
+      watchHistory,
+      subscription,
+      stats: {
+        totalEpisodesWatched
+      }
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+module.exports = { register, login, updateProfile, getProfileStats };

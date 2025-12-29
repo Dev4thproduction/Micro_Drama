@@ -21,7 +21,8 @@ const {
   listSeasonsBySeries,
   createSeason,
   updateSeason,
-  deleteSeason
+  deleteSeason,
+  createAdmin
 } = require('../controllers/adminController');
 const {
   listCategories,
@@ -66,6 +67,7 @@ router.get('/stats', getAdminStats);
 
 // User management
 router.get('/users', listUsers);
+router.post('/users/admin', createAdmin);
 router.patch('/users/:userId', updateUserStatus);
 router.post('/users/:userId/subscription', toggleSubscription);
 

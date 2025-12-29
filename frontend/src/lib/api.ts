@@ -9,13 +9,27 @@ const api = axios.create({
   },
 });
 
-// Request Interceptor: Attach Token
+// Request Interceptor: Attach Token & Guest ID
 api.interceptors.request.use(
   (config) => {
+    // Handle Auth Token
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Handle Guest ID
+    if (typeof window !== 'undefined') {
+      let guestId = localStorage.getItem('guestId');
+      if (!guestId) {
+        guestId = crypto.randomUUID(); // Use native crypto UUID
+        localStorage.setItem('guestId', guestId);
+      }
+      if (config.headers) {
+        config.headers['X-Guest-ID'] = guestId;
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)

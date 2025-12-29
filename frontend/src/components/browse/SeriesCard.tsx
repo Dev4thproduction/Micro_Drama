@@ -12,7 +12,7 @@ interface SeriesCardProps {
 
 export default function SeriesCard({ id, title, posterUrl, category }: SeriesCardProps) {
     return (
-        <Link href={`/watch/${id}`} className="group relative block w-full aspect-[2/3] rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-1">
+        <Link href={`/series/${id}`} className="group relative block w-full aspect-[2/3] rounded-xl overflow-hidden bg-gray-800 shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-1">
             {/* Poster Image */}
             <img
                 src={posterUrl || '/placeholder-poster.jpg'}

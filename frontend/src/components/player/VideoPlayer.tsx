@@ -10,13 +10,23 @@ interface VideoPlayerProps {
     isActive: boolean;
     onEnded?: () => void;
     onTimeUpdate?: (currentTime: number) => void;
+    startTime?: number;
 }
 
-export default function VideoPlayer({ src, poster, isActive, onEnded, onTimeUpdate }: VideoPlayerProps) {
+export default function VideoPlayer({ src, poster, isActive, onEnded, onTimeUpdate, startTime = 0 }: VideoPlayerProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const [isPlaying, setIsPlaying] = useState(false);
     const [progress, setProgress] = useState(0);
     const [isMuted, setIsMuted] = useState(true);
+    const hasSeeked = useRef(false);
+
+    // Seek on load
+    useEffect(() => {
+        if (isActive && startTime > 0 && !hasSeeked.current && videoRef.current) {
+            videoRef.current.currentTime = startTime;
+            hasSeeked.current = true;
+        }
+    }, [isActive, startTime]);
 
     // Handle active state changes
     useEffect(() => {
@@ -31,7 +41,12 @@ export default function VideoPlayer({ src, poster, isActive, onEnded, onTimeUpda
             }
         } else {
             videoRef.current.pause();
-            videoRef.current.currentTime = 0; // Reset when scrolling away
+            // Do NOT reset to 0 here automatically if we want to resume later? 
+            // The original code reset it: videoRef.current.currentTime = 0; 
+            // If we are scrolling away, resetting is fine, but if we come back?
+            // "Resume ... matter more".
+            // If I scroll away and come back, I expect to resume. 
+            // So I should REMOVE the auto-reset to 0.
             setIsPlaying(false);
         }
     }, [isActive]);

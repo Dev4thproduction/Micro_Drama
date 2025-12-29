@@ -15,6 +15,7 @@ interface Episode {
     videoUrl: string;
     thumbnailUrl: string;
     isFree?: boolean;
+    progress?: number;
 }
 
 interface SeriesPlayerProps {
@@ -29,6 +30,7 @@ export default function SeriesPlayer({ seriesId }: SeriesPlayerProps) {
     const [activeIndex, setActiveIndex] = useState(0);
     const containerRef = useRef<HTMLDivElement>(null);
     const [showList, setShowList] = useState(false);
+    const lastSaveTime = useRef<number>(0);
 
     useEffect(() => {
         const fetchEpisodes = async () => {
@@ -37,6 +39,18 @@ export default function SeriesPlayer({ seriesId }: SeriesPlayerProps) {
                 const { series, episodes } = res.data?.data ?? res.data;
                 setSeriesInfo(series);
                 setEpisodes(episodes || []);
+
+                // Auto-scroll to first unfinished episode or query param?
+                // The URL param ?ep=xyz is handled via finding index?
+                // The prompt says "Resume playback". 
+                // If I click "Continue Ep X", the URL has ?ep=ID.
+                // I should check URL search params to set activeIndex on load.
+                const urlParams = new URLSearchParams(window.location.search);
+                const epId = urlParams.get('ep');
+                if (epId && episodes) {
+                    const idx = episodes.findIndex((e: any) => e._id === epId);
+                    if (idx !== -1) setActiveIndex(idx);
+                }
             } catch (err) {
                 console.error(err);
             } finally {
@@ -64,6 +78,21 @@ export default function SeriesPlayer({ seriesId }: SeriesPlayerProps) {
         );
 
         container.querySelectorAll('[data-index]').forEach((el) => observer.observe(el));
+
+        // Initial Scroll to query param index if set?
+        // simple timeout to scroll after render
+        setTimeout(() => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const epId = urlParams.get('ep');
+            if (epId) {
+                const idx = episodes.findIndex(e => e._id === epId);
+                if (idx !== -1) {
+                    const el = container.querySelector(`[data-index="${idx}"]`);
+                    el?.scrollIntoView({ behavior: 'auto' });
+                }
+            }
+        }, 100);
+
         return () => observer.disconnect();
     }, [episodes]);
 
@@ -72,6 +101,22 @@ export default function SeriesPlayer({ seriesId }: SeriesPlayerProps) {
         const el = containerRef.current?.querySelector(`[data-index="${index}"]`);
         el?.scrollIntoView({ behavior: 'smooth' });
         setShowList(false);
+    };
+
+    const saveProgress = async (episodeId: string, currentTime: number, duration: number) => {
+        const now = Date.now();
+        if (now - lastSaveTime.current < 5000) return; // Throttle 5s
+        lastSaveTime.current = now;
+
+        try {
+            await api.post('/video/progress', {
+                episodeId,
+                progressSeconds: currentTime,
+                completed: currentTime > duration * 0.9 // 90% completion
+            });
+        } catch (e) {
+            console.error("Save progress failed", e);
+        }
     };
 
     if (loading) {
@@ -113,12 +158,17 @@ export default function SeriesPlayer({ seriesId }: SeriesPlayerProps) {
                                 src={ep.videoUrl}
                                 poster={ep.thumbnailUrl}
                                 isActive={activeIndex === index}
+                                startTime={ep.progress || 0}
                                 onEnded={() => {
+                                    saveProgress(ep._id, (ep as any).duration || 0, (ep as any).duration || 0);
                                     if (index < episodes.length - 1) {
                                         scrollToEpisode(index + 1);
                                     }
                                 }}
                                 onTimeUpdate={(currentTime) => {
+                                    // Save progress
+                                    saveProgress(ep._id, currentTime, (ep as any).duration || 300); // 300 mock if null
+
                                     // Record view after 5 seconds
                                     if (activeIndex === index && currentTime > 5 && !(ep as any).viewRecorded) {
                                         (ep as any).viewRecorded = true;

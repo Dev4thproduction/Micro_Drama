@@ -7,5 +7,6 @@ const router = express.Router();
 router.get('/home', getHome);
 router.get('/discover', getDiscover);
 router.get('/series/:seriesId/episodes', getSeriesEpisodes);
+router.get('/series/:seriesId', require('../controllers/browseController').getSeriesDetails);
 
 module.exports = router;

@@ -3,7 +3,9 @@ const Series = require('../models/Series');
 const Episode = require('../models/Episode');
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
+const Season = require('../models/Season'); // Add if missing
 const { sendSuccess } = require('../utils/response');
+const bcrypt = require('bcrypt');
 const { parsePagination, buildMeta } = require('../utils/pagination');
 
 const listPendingSeries = async (req, res, next) => {
@@ -677,7 +679,7 @@ const deleteAdminSeries = async (req, res, next) => {
 };
 
 // Season management
-const Season = require('../models/Season');
+
 
 const listSeasonsBySeries = async (req, res, next) => {
   try {
@@ -789,6 +791,42 @@ const deleteSeason = async (req, res, next) => {
   }
 };
 
+
+
+const createAdmin = async (req, res, next) => {
+  try {
+    const { email, password, displayName } = req.body;
+
+    if (!email || !password || !displayName) {
+      return next({ status: 400, message: 'All fields are required' });
+    }
+
+    const existing = await User.findOne({ email });
+    if (existing) {
+      return next({ status: 409, message: 'Email already registered' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const newAdmin = await User.create({
+      email,
+      passwordHash,
+      displayName,
+      role: 'admin',
+      status: 'active'
+    });
+
+    return sendSuccess(res, {
+      id: newAdmin._id,
+      email: newAdmin.email,
+      displayName: newAdmin.displayName,
+      role: newAdmin.role
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
 module.exports = {
   listPendingSeries,
   listPendingEpisodes,
@@ -810,5 +848,6 @@ module.exports = {
   listSeasonsBySeries,
   createSeason,
   updateSeason,
-  deleteSeason
+  deleteSeason,
+  createAdmin
 };

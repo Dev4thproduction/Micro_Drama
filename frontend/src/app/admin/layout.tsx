@@ -15,6 +15,7 @@ import {
   Menu,
   Shield,
   Zap,
+  Home,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -29,9 +30,11 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Categories', href: '/admin/categories', icon: FileText },
   { label: 'Series', href: '/admin/series', icon: FileText },
+  { label: 'Admins', href: '/admin/admins', icon: Shield },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
   { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+  { label: 'Public Home', href: '/', icon: Home },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

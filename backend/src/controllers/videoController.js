@@ -57,6 +57,12 @@ const getPlaybackUrl = async (req, res, next) => {
 const saveProgress = async (req, res, next) => {
   try {
     const userId = req.user && req.user.id;
+    const guestId = req.headers['x-guest-id'];
+
+    if (!userId && !guestId) {
+      return next({ status: 401, message: 'User or Guest ID required' });
+    }
+
     const { episodeId, progressSeconds, completed } = req.body || {};
 
     if (!episodeId || progressSeconds === undefined) {
@@ -70,18 +76,30 @@ const saveProgress = async (req, res, next) => {
       return next({ status: 400, message: 'progressSeconds must be a non-negative number' });
     }
 
-    const episode = await Episode.findById(episodeId).select('_id');
+    const episode = await Episode.findById(episodeId).select('_id series');
     if (!episode) {
       return next({ status: 404, message: 'Episode not found' });
     }
 
+    // Build query based on user or guest
+    const query = { episode: episodeId };
+    if (userId) query.user = userId;
+    else query.guestId = guestId;
+
+    const update = {
+      series: episode.series, // Ensure series is saved
+      progressSeconds,
+      completed: typeof completed === 'boolean' ? completed : false,
+      lastWatched: new Date()
+    };
+
+    // Explicitly set user/guestId in update to ensure it's saved on insert
+    if (userId) update.user = userId;
+    else update.guestId = guestId;
+
     const history = await WatchHistory.findOneAndUpdate(
-      { user: userId, episode: episodeId },
-      {
-        progressSeconds,
-        completed: typeof completed === 'boolean' ? completed : false,
-        lastWatchedAt: new Date()
-      },
+      query,
+      update,
       { upsert: true, new: true, setDefaultsOnInsert: true }
     );
 

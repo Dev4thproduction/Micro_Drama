@@ -11,6 +11,7 @@ const EpisodeSchema = new mongoose.Schema(
     releaseDate: { type: Date },
     status: { type: String, enum: episodeStatuses, default: 'pending' },
     video: { type: mongoose.Schema.Types.ObjectId, ref: 'Video' },
+    isFree: { type: Boolean, default: false },
     rejectionReason: { type: String, default: null },
   },
   { timestamps: true }
@@ -18,5 +19,6 @@ const EpisodeSchema = new mongoose.Schema(
 
 EpisodeSchema.index({ series: 1, order: 1 }, { unique: true });
 EpisodeSchema.index({ status: 1, releaseDate: 1 });
+EpisodeSchema.index({ isFree: 1 });
 
 module.exports = mongoose.model('Episode', EpisodeSchema);

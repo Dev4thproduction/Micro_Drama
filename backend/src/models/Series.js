@@ -6,9 +6,12 @@ const SeriesSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    posterUrl: { type: String, default: '' },
     creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     status: { type: String, enum: seriesStatuses, default: 'pending' },
-    tags: [{ type: String, trim: true }]
+    tags: [{ type: String, trim: true }],
+    views: { type: Number, default: 0 }
   },
   { timestamps: true }
 );

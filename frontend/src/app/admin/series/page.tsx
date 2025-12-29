@@ -373,16 +373,28 @@ export default function SeriesEpisodesPage() {
                 <Collapsible open={isOpen}>
                   <div className="mt-4 space-y-3">
                     {/* Manage Episodes Button */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        router.push(`/admin/series/${item._id}/episodes`);
-                      }}
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-[0_0_18px_rgba(19,91,236,0.35)] transition-all hover:bg-primary/90"
-                    >
-                      <Film size={16} />
-                      Manage Episodes (Add Videos)
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/admin/series/${item._id}/episodes`);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-white shadow-[0_0_18px_rgba(19,91,236,0.35)] transition-all hover:bg-primary/90"
+                      >
+                        <Film size={16} />
+                        Manage Episodes
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/admin/series/${item._id}/edit`);
+                        }}
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-gray-200 hover:border-white/20 hover:text-white transition-colors"
+                      >
+                        Edit Settings
+                      </button>
+                    </div>
 
                     {epError[item._id] && (
                       <div className="rounded-xl border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-200">

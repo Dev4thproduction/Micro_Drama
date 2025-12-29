@@ -178,7 +178,7 @@ const listEpisodesBySeries = async (req, res, next) => {
       Episode.countDocuments(filter)
     ]);
 
-    return sendSuccess(res, { items, total }, buildMeta(total, page, limit));
+    return sendSuccess(res, { items, total, series }, buildMeta(total, page, limit));
   } catch (err) {
     return next(err);
   }
@@ -608,8 +608,69 @@ const createAdminSeries = async (req, res, next) => {
       tags: safeTags
     });
 
+    // (No stray line)
+
     res.status(201);
     return sendSuccess(res, series);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+// Update series (admin)
+const updateAdminSeries = async (req, res, next) => {
+  try {
+    const { seriesId } = req.params;
+    const { title, description, categoryId, status, posterUrl, tags } = req.body || {};
+    console.log('[updateAdminSeries] Body:', req.body); // Log incoming body
+    if (!Types.ObjectId.isValid(seriesId)) {
+      return next({ status: 400, message: 'Invalid seriesId' });
+    }
+
+    const series = await Series.findById(seriesId);
+    if (!series) {
+      return next({ status: 404, message: 'Series not found' });
+    }
+
+    if (title && typeof title === 'string') series.title = title.trim();
+    if (typeof description === 'string') series.description = description;
+
+    if (categoryId) {
+      if (!Types.ObjectId.isValid(categoryId)) {
+        return next({ status: 400, message: 'Invalid categoryId' });
+      }
+      series.category = categoryId;
+    }
+
+    const allowedStatuses = ['pending', 'draft', 'published', 'archived'];
+    if (status && allowedStatuses.includes(status)) {
+      series.status = status;
+    }
+
+    if (typeof posterUrl === 'string') series.posterUrl = posterUrl;
+
+    if (Array.isArray(tags)) {
+      series.tags = tags.filter(t => typeof t === 'string');
+    }
+
+    await series.save();
+    return sendSuccess(res, series);
+  } catch (err) {
+    return next(err);
+  }
+};
+
+// Delete series (admin)
+const deleteAdminSeries = async (req, res, next) => {
+  try {
+    const { seriesId } = req.params;
+    if (!Types.ObjectId.isValid(seriesId)) {
+      return next({ status: 400, message: 'Invalid seriesId' });
+    }
+
+    // Optional: Check dependencies (episodes)
+    await Series.findByIdAndDelete(seriesId);
+    return sendSuccess(res, { deleted: true, id: seriesId });
   } catch (err) {
     return next(err);
   }
@@ -744,6 +805,8 @@ module.exports = {
   updateAdminEpisode,
   deleteAdminEpisode,
   createAdminSeries,
+  updateAdminSeries,
+  deleteAdminSeries,
   listSeasonsBySeries,
   createSeason,
   updateSeason,

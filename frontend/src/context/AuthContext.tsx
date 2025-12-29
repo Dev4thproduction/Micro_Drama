@@ -33,8 +33,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const handleRedirect = (role: string) => {
     if (role === 'admin') {
       router.push('/admin');
-    } else {
+    } else if (role === 'viewer') {
       router.push('/');
+    } else {
+      router.push('/admin'); // Default/Creator also to admin for now
     }
   };
 

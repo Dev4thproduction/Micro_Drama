@@ -16,6 +16,8 @@ const {
   updateAdminEpisode,
   deleteAdminEpisode,
   createAdminSeries,
+  updateAdminSeries,
+  deleteAdminSeries,
   listSeasonsBySeries,
   createSeason,
   updateSeason,
@@ -48,6 +50,8 @@ router.get('/episodes/pending', listPendingEpisodes);
 router.post('/episodes/:episodeId/approve', approveEpisode);
 router.get('/series', listAllSeries);
 router.post('/series', createAdminSeries);
+router.patch('/series/:seriesId', updateAdminSeries);
+router.delete('/series/:seriesId', deleteAdminSeries);
 router.get('/series/:seriesId/seasons', listSeasonsBySeries);
 router.post('/series/:seriesId/seasons', createSeason);
 router.patch('/seasons/:seasonId', updateSeason);

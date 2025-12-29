@@ -115,7 +115,8 @@ export default function SeriesEpisodesPage() {
             const seasonsPayload = seasonsRes.data?.data ?? [];
             setSeasons(Array.isArray(seasonsPayload) ? seasonsPayload : []);
 
-            const seriesList = seriesRes.data?.data ?? [];
+            const seriesData = seriesRes.data?.data ?? seriesRes.data;
+            const seriesList = Array.isArray(seriesData) ? seriesData : (seriesData?.items ?? []);
             const found = seriesList.find?.((s: any) => s._id === seriesId);
             if (found) setSeries(found);
         } catch (err: any) {
@@ -154,8 +155,9 @@ export default function SeriesEpisodesPage() {
             });
             const signData = signRes.data?.data ?? signRes.data;
             const cloudName = signData.cloudName;
+            const apiKey = signData.apiKey;
 
-            if (!cloudName) {
+            if (!cloudName || !apiKey) {
                 setError('Cloudinary is not configured. Please check backend .env');
                 setUploading(false);
                 return;
@@ -164,6 +166,7 @@ export default function SeriesEpisodesPage() {
             const widget = window.cloudinary.createUploadWidget(
                 {
                     cloudName: cloudName,
+                    apiKey: apiKey,
                     uploadPreset: 'ml_default', // Use unsigned upload preset (create in Cloudinary dashboard)
                     folder: `episodes/${seriesId}`,
                     resourceType: 'video',

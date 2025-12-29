@@ -35,4 +35,41 @@ const requestUploadUrl = async (req, res, next) => {
   }
 };
 
-module.exports = { requestUploadUrl };
+const signCloudinary = async (req, res, next) => {
+  try {
+    const { folder } = req.body;
+    const timestamp = Math.round((new Date()).getTime() / 1000);
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+
+    if (!apiSecret || !apiKey || !cloudName) {
+      return next({ status: 500, message: 'Cloudinary not configured' });
+    }
+
+    // Parameters to sign (ordered by key)
+    const params = {
+      timestamp,
+      upload_preset: 'ml_default', // Ensure this matches frontend
+    };
+    if (folder) params.folder = folder;
+
+    // Create signature string
+    const sortedKeys = Object.keys(params).sort();
+    const signString = sortedKeys.map(key => `${key}=${params[key]}`).join('&') + apiSecret;
+
+    const signature = crypto.createHash('sha1').update(signString).digest('hex');
+
+    return sendSuccess(res, {
+      signature,
+      timestamp,
+      cloudName,
+      apiKey,
+      upload_preset: params.upload_preset
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+module.exports = { requestUploadUrl, signCloudinary };

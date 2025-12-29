@@ -35,4 +35,41 @@ const requestUploadUrl = async (req, res, next) => {
   }
 };
 
-module.exports = { requestUploadUrl };
+const signCloudinaryUpload = async (req, res, next) => {
+  try {
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+    const apiKey = process.env.CLOUDINARY_API_KEY;
+    const apiSecret = process.env.CLOUDINARY_API_SECRET;
+    if (!cloudName || !apiKey || !apiSecret) {
+      return next({ status: 500, message: 'Cloudinary is not configured on the server' });
+    }
+
+    const { folder, resource_type, eager, upload_preset } = req.body || {};
+    const timestamp = Math.floor(Date.now() / 1000);
+
+    // Build params object for signature
+    const params = { timestamp };
+    if (folder && typeof folder === 'string') params.folder = folder;
+    if (eager && typeof eager === 'string') params.eager = eager;
+    if (upload_preset && typeof upload_preset === 'string') params.upload_preset = upload_preset;
+
+    // Sort params alphabetically and create signature string
+    const sortedKeys = Object.keys(params).sort();
+    const signatureString = sortedKeys.map(key => `${key}=${params[key]}`).join('&') + apiSecret;
+    const signature = crypto.createHash('sha1').update(signatureString).digest('hex');
+
+    return sendSuccess(res, {
+      cloudName,
+      apiKey,
+      timestamp,
+      folder: params.folder,
+      signature,
+      // Return the upload URL for convenience
+      uploadUrl: `https://api.cloudinary.com/v1_1/${cloudName}/${resource_type || 'auto'}/upload`
+    });
+  } catch (err) {
+    return next(err);
+  }
+};
+
+module.exports = { requestUploadUrl, signCloudinaryUpload };

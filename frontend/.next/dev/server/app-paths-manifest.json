@@ -1,6 +1,10 @@
 {
-  "/dashboard/page": "app/dashboard/page.js",
-  "/login/page": "app/login/page.js",
-  "/page": "app/page.js",
-  "/register/page": "app/register/page.js"
+  "/admin/analytics/page": "app/admin/analytics/page.js",
+  "/admin/categories/page": "app/admin/categories/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/series/[id]/episodes/page": "app/admin/series/[id]/episodes/page.js",
+  "/admin/series/page": "app/admin/series/page.js",
+  "/admin/subscriptions/page": "app/admin/subscriptions/page.js",
+  "/admin/users/page": "app/admin/users/page.js",
+  "/login/page": "app/login/page.js"
 }

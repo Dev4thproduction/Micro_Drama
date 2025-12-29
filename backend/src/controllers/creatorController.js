@@ -5,9 +5,11 @@ const Video = require('../models/Video');
 const { sendSuccess } = require('../utils/response');
 const { parsePagination, buildMeta } = require('../utils/pagination');
 
+const allowedSeriesStatuses = ['pending', 'draft', 'published', 'archived'];
+
 const createSeries = async (req, res, next) => {
   try {
-    const { title, description, tags } = req.body || {};
+    const { title, description, tags, categories, status, posterUrl } = req.body || {};
     const creatorId = req.user && req.user.id;
 
     if (!title || typeof title !== 'string' || !title.trim()) {
@@ -15,13 +17,18 @@ const createSeries = async (req, res, next) => {
     }
 
     const safeTags = Array.isArray(tags) ? tags.filter((t) => typeof t === 'string') : [];
+    const safeCategories = Array.isArray(categories)
+      ? categories.filter((c) => typeof c === 'string')
+      : [];
 
     const series = await Series.create({
       title: title.trim(),
       description: description || '',
       tags: safeTags,
+      categories: safeCategories,
       creator: creatorId,
-      status: 'pending'
+      status: allowedSeriesStatuses.includes(status) ? status : 'pending',
+      posterUrl: typeof posterUrl === 'string' ? posterUrl : ''
     });
 
     res.status(201);

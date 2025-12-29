@@ -31,7 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Helper to handle redirection based on role
   const handleRedirect = (role: string) => {
     if (role === 'admin') {
-      router.push('/dashboard');
+      router.push('/admin');
     } else {
       router.push('/');
     }
